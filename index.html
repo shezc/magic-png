@@ -1,73 +1,90 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-  <style>
-    input,textarea,button,img {
-      display: block;
+<html>
+ <head>
+  <title>图片的隐写</title>
+ </head>
+
+ <body>
+    <div style="margin-left: 35%">
+        <p>请选择一个图片</p>
+        <br />
+        <img id='preview' />
+        <br />
+        <input type='file' id='file' />
+        <br />
+        <div>
+            <textarea
+                id='message'
+                style="height:200px;width:600px;"
+                placeholder='请输入要隐写的文本'>
+            </textarea>
+            <br />
+            <button id='encode'>隐藏</button> 
+            <button id='decode'>展示</button>
+        </div>
+        <canvas id='canvas' style="display:none;"></canvas>
+        <img id='output' />
+    </div>
+    
+  <script type="text/javascript" src="imagemask.js"></script>
+  <script type="text/javascript">
+    const mask = new ImageMask({debug: false})
+
+    window.onload = function() {
+        const input = document.getElementById('file')
+        input.addEventListener('change', importImage)
+
+        const encodeButton = document.getElementById('encode')
+        encodeButton.addEventListener('click', encode)
+
+        const decodeButton = document.getElementById('decode')
+        decodeButton.addEventListener('click', decode)
     }
-  </style>
-</head>
-<body>
-  <p>请选择文件：</p>
-  <input type="file" id="file">
 
-  <p>图片预览：</p>
-  <canvas id="canvas" style="width:600px"></canvas>
+    const importImage = function(e) {
+        var reader = new FileReader()
 
-  <p>要写入的信息</p>
-  <textarea id="message" cols="30" rows="10"></textarea>
+        reader.onload = function(event) {
+            // 展示图片
+            document.getElementById('preview').src = event.target.result
 
-  <button id="encode" class="submit">写入</button>
-  
+            document.getElementById('message').value = ''
+            document.getElementById('output').src = ''
 
-  <div>
-    <p>写入后展示的图片</p>
-    <img id="output" style="width:600px">
+            // 从canvas中读取元素
+            const img = new Image()
+            img.onload = function() {
+                const canvas = document.getElementById('canvas')
+                const ctx = canvas.getContext('2d')
+                ctx.canvas.width = img.width
+                ctx.canvas.height = img.height
+                ctx.drawImage(img, 0, 0)
+            }
+            img.src = event.target.result
+        }
 
-    <button id="decode">读取</button>
+        reader.readAsDataURL(e.target.files[0])
+    }
 
-    <p>读取的信息为：</p>
-    <div id="messageDecoded"></div>
-  </div>
-</body>
+    const encode = function() {
+        const message = document.getElementById('message').value
+        const output = document.getElementById('output')
+        const canvas = document.getElementById('canvas')
+        const preview = document.getElementById('preview')
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(preview, 0, 0, preview.width, preview.height)
+
+        mask.hideText(canvas, message)
+        output.src = canvas.toDataURL()
+    }
+    const decode = function() {
+        // decode the message with the supplied password
+        const canvas = document.getElementById('canvas')
+        const message = mask.revealText(canvas)
+
+        document.getElementById('message').value = message
+    }
+
+
+  </script>
+ </body>
 </html>
-
-<script>
-  window.onload = () => {
-    // 读取文件
-    const input = document.getElementById('file')
-    input.addEventListener('change',importImage)
-
-    // 写入信息
-    const encodeBtn = document.getElementById('encode')
-    encodeBtn.addEventListener('click', encode)
-
-    // 读取信息
-    const decodeBtn = document.getElementById('decode')
-    decodeBtn.addEventListener('click', decode)
-  }
-
-
-  // 显示图片到画布
-  const importImage = (e) => {
-    const render = new FileReader()
-    render.onload = (evt) => {
-      const img = new Image()
-      img.onload = () => {
-        const ctx = document.getElementById('canvas').getContext('2d')
-        ctx.canvas.width = img.width
-        ctx.canvas.height = img.height
-        ctx.drawImage(img, 0, 0)
-      }
-      img.src = event.target.result
-    }
-    render.readAsDataURL(e.target.files[0])
-  }
-
-
-
-</script>
